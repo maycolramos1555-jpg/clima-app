@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App del Clima</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-900 to-blue-600 min-h-screen p-8">
+
+    <div class="max-w-2xl mx-auto">
+        <!-- Título -->
+        <h1 class="text-4xl font-bold text-white text-center mb-8">
+            🌤️ App del Clima
+        </h1>
+
+        <!-- Buscador -->
+        <div class="bg-white rounded-2xl p-6 shadow-xl mb-6">
+            <div class="flex gap-3">
+                <input 
+                    id="inputCiudad"
+                    type="text" 
+                    placeholder="Busca una ciudad..." 
+                    class="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <button 
+                    onclick="buscarClima()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold transition">
+                    Buscar
+                </button>
+            </div>
+        </div>
+
+        <!-- Resultado del clima -->
+        <div id="resultadoClima" class="hidden bg-white rounded-2xl p-6 shadow-xl mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-2" id="nombreCiudad"></h2>
+            <p class="text-6xl font-bold text-blue-500 mb-2" id="temperatura"></p>
+            <p class="text-gray-500 text-lg" id="descripcion"></p>
+        </div>
+
+        <!-- Historial -->
+        <div class="bg-white rounded-2xl p-6 shadow-xl">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">📋 Historial de búsquedas</h2>
+            <div id="historial"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080/api/clima';
+        const WEATHER_API_KEY = '92b222dcb2168e1ad50fb7d0d1924114';
+
+        async function buscarClima() {
+            const ciudad = document.getElementById('inputCiudad').value;
+            if (!ciudad) return;
+
+            const url = `https://api.openweathermap.org/data/2.5/weather?q=${ciudad}&appid=${WEATHER_API_KEY}&units=metric&lang=es`;
+            const res = await fetch(url);
+            const data = await res.json();
+
+            // Mostrar resultado
+            document.getElementById('nombreCiudad').textContent = `${data.name}, ${data.sys.country}`;
+            document.getElementById('temperatura').textContent = `${Math.round(data.main.temp)}°C`;
+            document.getElementById('descripcion').textContent = data.weather[0].description;
+            document.getElementById('resultadoClima').classList.remove('hidden');
+
+            // Guardar en backend
+            await fetch(`${API_URL}/guardar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ciudad: data.name,
+                    pais: data.sys.country,
+                    temperatura: data.main.temp,
+                    descripcion: data.weather[0].description,
+                    fechaBusqueda: new Date().toISOString()
+                })
+            });
+
+            cargarHistorial();
+        }
+
+        async function cargarHistorial() {
+            const res = await fetch(`${API_URL}/historial`);
+            const data = await res.json();
+            const historial = document.getElementById('historial');
+            historial.innerHTML = data.reverse().map(b => `
+                <div class="flex justify-between items-center border-b py-3">
+                    <div>
+                        <p class="font-semibold text-gray-800">${b.ciudad}, ${b.pais}</p>
+                        <p class="text-gray-500 text-sm">${b.descripcion}</p>
+                    </div>
+                    <p class="text-blue-500 font-bold text-xl">${Math.round(b.temperatura)}°C</p>
+                </div>
+            `).join('');
+        }
+
+        cargarHistorial();
+    </script>
+</body>
+</html>
