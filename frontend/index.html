@@ -5,93 +5,346 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>App del Clima</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Outfit', sans-serif; }
+        body {
+            background: #0a0a1a;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .bg-mesh {
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(255, 100, 50, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 10%, rgba(100, 50, 255, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(50, 200, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 90% 90%, rgba(255, 200, 50, 0.1) 0%, transparent 50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+        .glass {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .glass-strong {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .temp-display {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(4rem, 12vw, 8rem);
+            font-weight: 700;
+            line-height: 1;
+            background: linear-gradient(135deg, #ff6432, #ff9a00, #ffcc00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .search-input {
+            background: rgba(255,255,255,0.07);
+            border: 1.5px solid rgba(255,255,255,0.15);
+            color: white;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .search-input::placeholder { color: rgba(255,255,255,0.35); }
+        .search-input:focus {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255, 140, 50, 0.6);
+            box-shadow: 0 0 0 4px rgba(255, 100, 50, 0.1);
+        }
+        .btn-search {
+            background: linear-gradient(135deg, #ff6432, #ff9a00);
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(255, 100, 50, 0.3);
+        }
+        .btn-search:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 30px rgba(255, 100, 50, 0.5);
+        }
+        .btn-search:active { transform: translateY(0); }
+        .weather-icon { font-size: 5rem; filter: drop-shadow(0 0 20px rgba(255,200,50,0.5)); }
+        .stat-card {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .stat-card:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+        .stat-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .stat-value { font-size: 1.4rem; font-weight: 700; color: white; }
+        .stat-label { font-size: 0.75rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.1em; }
+        .history-item {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
+            padding: 0.875rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.25s;
+            margin-bottom: 0.5rem;
+        }
+        .history-item:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.15);
+            transform: translateX(4px);
+        }
+        .history-temp {
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 99px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .tag-hot { background: rgba(255,100,50,0.2); color: #ff8060; border: 1px solid rgba(255,100,50,0.3); }
+        .tag-warm { background: rgba(255,180,50,0.2); color: #ffb830; border: 1px solid rgba(255,180,50,0.3); }
+        .tag-cool { background: rgba(50,150,255,0.2); color: #5090ff; border: 1px solid rgba(50,150,255,0.3); }
+        .tag-cold { background: rgba(100,200,255,0.2); color: #60c8ff; border: 1px solid rgba(100,200,255,0.3); }
+        .fade-in { animation: fadeIn 0.5s ease forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 99px; }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-blue-900 to-blue-600 min-h-screen p-8">
+<body>
+    <div class="bg-mesh"></div>
 
-    <div class="max-w-2xl mx-auto">
-        <!-- Título -->
-        <h1 class="text-4xl font-bold text-white text-center mb-8">
-            🌤️ App del Clima
-        </h1>
+    <div class="relative z-10 max-w-2xl mx-auto px-4 py-10">
 
-        <!-- Buscador -->
-        <div class="bg-white rounded-2xl p-6 shadow-xl mb-6">
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <div class="inline-flex items-center gap-2 glass px-4 py-2 rounded-full mb-4">
+                <span class="w-2 h-2 rounded-full bg-green-400 pulse"></span>
+                <span class="text-white/50 text-xs font-semibold uppercase tracking-widest">En vivo</span>
+            </div>
+            <h1 class="text-5xl font-black text-white mb-2" style="letter-spacing:-0.02em">
+                ☁️ WeatherApp
+            </h1>
+            <p class="text-white/40 text-sm">Clima en tiempo real · Historial guardado</p>
+        </div>
+
+        <!-- Search -->
+        <div class="glass-strong rounded-2xl p-4 mb-6">
             <div class="flex gap-3">
-                <input 
+                <input
                     id="inputCiudad"
-                    type="text" 
-                    placeholder="Busca una ciudad..." 
-                    class="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    type="text"
+                    placeholder="Escribe una ciudad..."
+                    class="search-input flex-1 rounded-xl px-5 py-3.5 text-base"
+                    onkeypress="if(event.key==='Enter') buscarClima()"
                 />
-                <button 
-                    onclick="buscarClima()"
-                    class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold transition">
-                    Buscar
+                <button onclick="buscarClima()" class="btn-search text-white font-bold px-6 py-3.5 rounded-xl text-sm whitespace-nowrap">
+                    Buscar →
                 </button>
             </div>
         </div>
 
-        <!-- Resultado del clima -->
-        <div id="resultadoClima" class="hidden bg-white rounded-2xl p-6 shadow-xl mb-6">
-            <h2 class="text-2xl font-bold text-gray-800 mb-2" id="nombreCiudad"></h2>
-            <p class="text-6xl font-bold text-blue-500 mb-2" id="temperatura"></p>
-            <p class="text-gray-500 text-lg" id="descripcion"></p>
+        <!-- Weather Result -->
+        <div id="resultadoClima" class="hidden glass-strong rounded-3xl p-6 mb-6 fade-in">
+            <div class="flex items-start justify-between mb-4">
+                <div>
+                    <p class="text-white/50 text-sm font-semibold uppercase tracking-widest mb-1" id="paisResult"></p>
+                    <h2 class="text-3xl font-black text-white" id="nombreCiudad"></h2>
+                </div>
+                <div class="weather-icon" id="iconoClima"></div>
+            </div>
+
+            <div class="temp-display mb-2" id="temperatura"></div>
+            <p class="text-white/60 text-lg capitalize mb-6" id="descripcion"></p>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-3 gap-3">
+                <div class="stat-card">
+                    <div class="stat-icon">💧</div>
+                    <div class="stat-value" id="humedad">--</div>
+                    <div class="stat-label">Humedad</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💨</div>
+                    <div class="stat-value" id="viento">--</div>
+                    <div class="stat-label">Viento</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🌡️</div>
+                    <div class="stat-value" id="sensacion">--</div>
+                    <div class="stat-label">Sensación</div>
+                </div>
+            </div>
         </div>
 
         <!-- Historial -->
-        <div class="bg-white rounded-2xl p-6 shadow-xl">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">📋 Historial de búsquedas</h2>
-            <div id="historial"></div>
+        <div class="glass-strong rounded-3xl p-6">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-white font-black text-xl">Historial</h2>
+                <span class="text-white/30 text-sm" id="contadorHistorial">0 búsquedas</span>
+            </div>
+            <div id="historial">
+                <div class="text-center py-8 text-white/20">
+                    <div class="text-4xl mb-3">🔍</div>
+                    <p class="text-sm">Aún no hay búsquedas guardadas</p>
+                </div>
+            </div>
         </div>
+
     </div>
 
     <script>
         const API_URL = 'http://localhost:8080/api/clima';
         const WEATHER_API_KEY = '92b222dcb2168e1ad50fb7d0d1924114';
 
+        function getWeatherIcon(desc) {
+            const d = desc.toLowerCase();
+            if (d.includes('lluvia') || d.includes('rain')) return '🌧️';
+            if (d.includes('tormenta') || d.includes('thunder')) return '⛈️';
+            if (d.includes('nieve') || d.includes('snow')) return '❄️';
+            if (d.includes('nube') || d.includes('cloud')) return '☁️';
+            if (d.includes('niebla') || d.includes('fog') || d.includes('mist')) return '🌫️';
+            if (d.includes('claro') || d.includes('clear') || d.includes('sol')) return '☀️';
+            return '🌤️';
+        }
+
+        function getTempTag(temp) {
+            if (temp >= 35) return '<span class="tag tag-hot">Muy caliente</span>';
+            if (temp >= 25) return '<span class="tag tag-warm">Cálido</span>';
+            if (temp >= 15) return '<span class="tag tag-cool">Fresco</span>';
+            return '<span class="tag tag-cold">Frío</span>';
+        }
+
+        function formatFecha(fechaStr) {
+            if (!fechaStr) return '';
+            const fecha = new Date(fechaStr);
+            return fecha.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+        }
+
         async function buscarClima() {
-            const ciudad = document.getElementById('inputCiudad').value;
+            const ciudad = document.getElementById('inputCiudad').value.trim();
             if (!ciudad) return;
 
-            const url = `https://api.openweathermap.org/data/2.5/weather?q=${ciudad}&appid=${WEATHER_API_KEY}&units=metric&lang=es`;
-            const res = await fetch(url);
-            const data = await res.json();
+            const btn = document.querySelector('.btn-search');
+            btn.textContent = 'Buscando...';
+            btn.disabled = true;
 
-            // Mostrar resultado
-            document.getElementById('nombreCiudad').textContent = `${data.name}, ${data.sys.country}`;
-            document.getElementById('temperatura').textContent = `${Math.round(data.main.temp)}°C`;
-            document.getElementById('descripcion').textContent = data.weather[0].description;
-            document.getElementById('resultadoClima').classList.remove('hidden');
+            try {
+                const url = `https://api.openweathermap.org/data/2.5/weather?q=${ciudad}&appid=${WEATHER_API_KEY}&units=metric&lang=es`;
+                const res = await fetch(url);
+                const data = await res.json();
 
-            // Guardar en backend
-            await fetch(`${API_URL}/guardar`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ciudad: data.name,
-                    pais: data.sys.country,
-                    temperatura: data.main.temp,
-                    descripcion: data.weather[0].description,
-                    fechaBusqueda: new Date().toISOString()
-                })
-            });
+                if (data.cod !== 200) {
+                    alert('Ciudad no encontrada. Intenta con otro nombre.');
+                    return;
+                }
 
-            cargarHistorial();
+                document.getElementById('nombreCiudad').textContent = data.name;
+                document.getElementById('paisResult').textContent = data.sys.country;
+                document.getElementById('temperatura').textContent = `${Math.round(data.main.temp)}°`;
+                document.getElementById('descripcion').textContent = data.weather[0].description;
+                document.getElementById('iconoClima').textContent = getWeatherIcon(data.weather[0].description);
+                document.getElementById('humedad').textContent = `${data.main.humidity}%`;
+                document.getElementById('viento').textContent = `${Math.round(data.wind.speed)} m/s`;
+                document.getElementById('sensacion').textContent = `${Math.round(data.main.feels_like)}°C`;
+
+                const resultado = document.getElementById('resultadoClima');
+                resultado.classList.remove('hidden');
+                resultado.classList.add('fade-in');
+
+                await fetch(`${API_URL}/guardar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ciudad: data.name,
+                        pais: data.sys.country,
+                        temperatura: data.main.temp,
+                        descripcion: data.weather[0].description,
+                        fechaBusqueda: new Date().toISOString().slice(0, 19)
+                    })
+                });
+
+                cargarHistorial();
+
+            } catch (err) {
+                alert('Error al buscar el clima. Intenta de nuevo.');
+            } finally {
+                btn.textContent = 'Buscar →';
+                btn.disabled = false;
+            }
         }
 
         async function cargarHistorial() {
-            const res = await fetch(`${API_URL}/historial`);
-            const data = await res.json();
-            const historial = document.getElementById('historial');
-            historial.innerHTML = data.reverse().map(b => `
-                <div class="flex justify-between items-center border-b py-3">
-                    <div>
-                        <p class="font-semibold text-gray-800">${b.ciudad}, ${b.pais}</p>
-                        <p class="text-gray-500 text-sm">${b.descripcion}</p>
+            try {
+                const res = await fetch(`${API_URL}/historial`);
+                const data = await res.json();
+                const historial = document.getElementById('historial');
+                const contador = document.getElementById('contadorHistorial');
+
+                contador.textContent = `${data.length} búsqueda${data.length !== 1 ? 's' : ''}`;
+
+                if (data.length === 0) {
+                    historial.innerHTML = `
+                        <div class="text-center py-8 text-white/20">
+                            <div class="text-4xl mb-3">🔍</div>
+                            <p class="text-sm">Aún no hay búsquedas guardadas</p>
+                        </div>`;
+                    return;
+                }
+
+                historial.innerHTML = data.reverse().map(b => `
+                    <div class="history-item">
+                        <div class="flex items-center gap-3">
+                            <span style="font-size:1.8rem">${getWeatherIcon(b.descripcion)}</span>
+                            <div>
+                                <p class="text-white font-bold text-base">${b.ciudad}, ${b.pais}</p>
+                                <p class="text-white/40 text-xs capitalize">${b.descripcion} · ${formatFecha(b.fechaBusqueda)}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="history-temp" style="background: linear-gradient(135deg, #ff6432, #ffcc00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                                ${Math.round(b.temperatura)}°C
+                            </div>
+                            <div style="margin-top:4px">${getTempTag(b.temperatura)}</div>
+                        </div>
                     </div>
-                    <p class="text-blue-500 font-bold text-xl">${Math.round(b.temperatura)}°C</p>
-                </div>
-            `).join('');
+                `).join('');
+            } catch (err) {
+                console.error('Error cargando historial:', err);
+            }
         }
 
         cargarHistorial();
