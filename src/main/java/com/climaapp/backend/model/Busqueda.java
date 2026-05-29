@@ -2,6 +2,7 @@ package com.climaapp.backend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 
 @Data
@@ -17,5 +18,7 @@ public class Busqueda {
     private String pais;
     private Double temperatura;
     private String descripcion;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime fechaBusqueda;
 }
