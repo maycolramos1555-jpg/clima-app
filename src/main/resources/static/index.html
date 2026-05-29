@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App del Clima</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-900 to-blue-600 min-h-screen p-8">
+
+    <div class="max-w-2xl mx-auto">
+        <!-- Título -->
+        <h1 class="text-4xl font-bold text-white text-center mb-8">
+            🌤️ App del Clima
+        </h1>
+
+        <!-- Buscador -->
+        <div class="bg-white rounded-2xl p-6 shadow-xl mb-6">
+            <div class="flex gap-3">
+                <input
+                    id="inputCiudad"
+                    type="text"
+                    placeholder="Busca una ciudad..."
+                    class="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <button
+                    onclick="buscarClima()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold transition">
+                    Buscar
+                </button>
+            </div>
+        </div>
+
+        <!-- Resultado del clima -->
+        <div id="resultadoClima" class="hidden bg-white rounded-2xl p-6 shadow-xl mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-2" id="nombreCiudad"></h2>
+            <p class="text-6xl font-bold text-blue-500 mb-2" id="temperatura"></p>
+            <p class="text-gray-500 text-lg" id="descripcion"></p>
+        </div>
+
+        <!-- Historial -->
+        <div class="bg-white rounded-2xl p-6 shadow-xl">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">📋 Historial de búsquedas</h2>
+            <div id="historial"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080/api/clima';
+
+        async function generarClimaleatorio() {
+            const ciudades = ['Madrid', 'Barcelona', 'Valencia', 'Sevilla', 'Bilbao'];
+            const descripciones = ['Soleado', 'Nublado', 'Lluvia', 'Parcialmente nublado', 'Despejado'];
+
+            return {
+                ciudad: ciudades[Math.floor(Math.random() * ciudades.length)],
+                pais: 'ES',
+                temperatura: Math.floor(Math.random() * 30) + 5,
+                descripcion: descripciones[Math.floor(Math.random() * descripciones.length)]
+            };
+        }
+
+        async function buscarClima() {
+            const ciudad = document.getElementById('inputCiudad').value;
+            if (!ciudad) return;
+
+            try {
+                // Generar clima simulado
+                const climaData = await generarClimaleatorio();
+                climaData.ciudad = ciudad.charAt(0).toUpperCase() + ciudad.slice(1);
+
+                // Mostrar resultado
+                document.getElementById('nombreCiudad').textContent = `${climaData.ciudad}, ${climaData.pais}`;
+                document.getElementById('temperatura').textContent = `${climaData.temperatura}°C`;
+                document.getElementById('descripcion').textContent = climaData.descripcion;
+                document.getElementById('resultadoClima').classList.remove('hidden');
+
+                // Guardar en backend
+                await fetch(`${API_URL}/guardar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ciudad: climaData.ciudad,
+                        pais: climaData.pais,
+                        temperatura: climaData.temperatura,
+                        descripcion: climaData.descripcion,
+                        fechaBusqueda: new Date().toISOString()
+                    })
+                });
+
+                document.getElementById('inputCiudad').value = '';
+                cargarHistorial();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al buscar clima. Intenta de nuevo.');
+            }
+        }
+
+        async function cargarHistorial() {
+            try {
+                const res = await fetch(`${API_URL}/historial`);
+                const data = await res.json();
+                const historial = document.getElementById('historial');
+
+                if (data.length === 0) {
+                    historial.innerHTML = '<p class="text-gray-500 text-center py-4">No hay búsquedas aún</p>';
+                    return;
+                }
+
+                historial.innerHTML = data.reverse().map(b => `
+                    <div class="flex justify-between items-center border-b py-3 hover:bg-gray-50 px-2 rounded transition">
+                        <div>
+                            <p class="font-semibold text-gray-800">${b.ciudad}, ${b.pais}</p>
+                            <p class="text-gray-500 text-sm">${b.descripcion}</p>
+                            <p class="text-gray-400 text-xs">${new Date(b.fechaBusqueda).toLocaleString('es-ES')}</p>
+                        </div>
+                        <p class="text-blue-500 font-bold text-xl">${Math.round(b.temperatura)}°C</p>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error cargando historial:', error);
+            }
+        }
+
+        // Cargar historial al abrir la página
+        cargarHistorial();
+
+        // Permitir Enter para buscar
+        document.getElementById('inputCiudad').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') buscarClima();
+        });
+    </script>
+</body>
+</html>

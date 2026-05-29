@@ -1,0 +1,57 @@
+services:
+  mysql-clima:
+    image: mysql:8.0
+    container_name: mysql-clima
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: climadb
+      MYSQL_USER: climauser
+      MYSQL_PASSWORD: climatica123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - clima-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clima-backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-clima:3306/climadb
+      SPRING_DATASOURCE_USERNAME: climauser
+      SPRING_DATASOURCE_PASSWORD: climatica123
+    depends_on:
+      mysql-clima:
+        condition: service_healthy
+    networks:
+      - clima-network
+    restart: on-failure
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: clima-frontend
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
+    networks:
+      - clima-network
+
+volumes:
+  mysql_data:
+
+networks:
+  clima-network:
+    driver: bridge
