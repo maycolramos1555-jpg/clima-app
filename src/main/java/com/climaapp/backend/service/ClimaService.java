@@ -48,4 +48,7 @@ public class ClimaService {
 
         return guardarBusqueda(busqueda);
     }
+    public void eliminarBusqueda(Long id) {
+        busquedaRepository.deleteById(id);
+    }
 }

@@ -6,14 +6,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 @RestController
 @RequestMapping("/api/clima")
-@CrossOrigin(origins = "*", maxAge = 3600)
+@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.DELETE})
 public class ClimaController {
 
     @Autowired
     private ClimaService climaService;
+    @DeleteMapping("/eliminar/{id}")
+    public void eliminarBusqueda(@PathVariable Long id) {
+        climaService.eliminarBusqueda(id);
+    }
 
     @GetMapping("/historial")
     public ResponseEntity<List<Busqueda>> obtenerHistorial() {
@@ -37,6 +42,7 @@ public class ClimaController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
 
     @GetMapping("/buscar/{ciudad}")
     public ResponseEntity<List<Busqueda>> buscarPorCiudad(@PathVariable String ciudad) {
@@ -62,5 +68,6 @@ public class ClimaController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
+
     }
 }
