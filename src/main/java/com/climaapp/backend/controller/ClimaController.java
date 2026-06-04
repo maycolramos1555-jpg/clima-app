@@ -9,58 +9,30 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/clima")
-@CrossOrigin(origins = "*", maxAge = 3600)
+@CrossOrigin(origins = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.DELETE, RequestMethod.OPTIONS})
 public class ClimaController {
 
     @Autowired
     private ClimaService climaService;
 
+    @GetMapping("/buscar-externo/{ciudad}")
+    public ResponseEntity<Busqueda> buscarClima(@PathVariable String ciudad) {
+        Busqueda resultado = climaService.consultarClimaExterno(ciudad);
+        if (resultado != null) {
+            return ResponseEntity.ok(resultado);
+        }
+        return ResponseEntity.notFound().build();
+    }
+
     @GetMapping("/historial")
     public ResponseEntity<List<Busqueda>> obtenerHistorial() {
-        try {
-            List<Busqueda> historial = climaService.obtenerHistorial();
-            return ResponseEntity.ok(historial);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
+        List<Busqueda> historial = climaService.obtenerHistorial();
+        return ResponseEntity.ok(historial);
     }
 
-    @PostMapping("/guardar")
-    public ResponseEntity<Busqueda> guardarBusqueda(@RequestBody Busqueda busqueda) {
-        try {
-            if (busqueda.getCiudad() == null || busqueda.getCiudad().isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-            Busqueda guardada = climaService.guardarBusqueda(busqueda);
-            return ResponseEntity.ok(guardada);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    @GetMapping("/buscar/{ciudad}")
-    public ResponseEntity<List<Busqueda>> buscarPorCiudad(@PathVariable String ciudad) {
-        try {
-            if (ciudad == null || ciudad.isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-            List<Busqueda> resultados = climaService.buscarPorCiudad(ciudad);
-            return ResponseEntity.ok(resultados);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    @PostMapping("/simular/{ciudad}")
-    public ResponseEntity<Busqueda> generarClimaSimulado(@PathVariable String ciudad) {
-        try {
-            if (ciudad == null || ciudad.isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-            Busqueda generada = climaService.generarClimaSimulado(ciudad);
-            return ResponseEntity.ok(generada);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
+    @DeleteMapping("/historial")
+    public ResponseEntity<Void> borrarHistorial() {
+        climaService.borrarHistorial();
+        return ResponseEntity.noContent().build();
     }
 }
